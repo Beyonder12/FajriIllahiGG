@@ -60,7 +60,7 @@ UserData.remoteMethod(
     }
 );
 
-UserData.getList = async function (filter, skip, limit, sort, options) {
+UserData.readJenius = async function (filter, skip, limit, sort, options) {
     // payload : {placeId:"string", search:"string", dateStart: "date", dateEnd: "date"}
 
     try {
@@ -183,7 +183,7 @@ UserData.getList = async function (filter, skip, limit, sort, options) {
     }
   };
 
-UserData.remoteMethod("getList", {
+UserData.remoteMethod("readJenius", {
 description: ["get list of inventory"],
 accepts: [
     { arg: "filter", type: "object", required: true, description: "filter" },
@@ -195,7 +195,7 @@ accepts: [
 returns: {
     arg: "status", type: "object", root: true, description: "Return value"
 },
-http: {verb: "get", path: "/getList"}
+http: {verb: "get"}
 });
 
 // CRUD Operation : Update Method
