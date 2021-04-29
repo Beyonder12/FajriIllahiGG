@@ -9,6 +9,7 @@ const moment = require('moment-timezone');
 
 module.exports = function(UserData) {
 
+// CRUD Operation : Create Method
 UserData.createJenius = async function (data,options) {
     //payload: {username: "string", password: "string"}
 
@@ -59,6 +60,7 @@ UserData.remoteMethod(
     }
 );
 
+// CRUD Operation : Update Method
 UserData.updateJenius = async function (id, options) {
     // payload: {id: "string"}
 
