@@ -266,7 +266,7 @@ UserData.softDeleteJenius = async function (id, options) {
       data['isActive'] = false;
       var userData = await UserData.updateAll({id: id}, data);
       if (userData['count'] > 0) {
-        return Promise.resolve({status: "success", item: customer});
+        return Promise.resolve({status: "success", item: userData});
       } else {
         const error = new Error("Please make sure your id is right");
         error.statusCode = 404;
