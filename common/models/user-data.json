@@ -9,6 +9,15 @@
   "properties": {
     "userName": {
       "type": "string"
+    },
+    "accountNumber": {
+      "type": "string"
+    },
+    "emailAddress": {
+      "type": "string"
+    },
+    "identityNumber": {
+      "type": "string"
     }
   },
   "validations": [],
