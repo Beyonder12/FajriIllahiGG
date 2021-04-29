@@ -10,7 +10,6 @@
     "password"
   ],
   "properties": {
-
     "password": {
       "type": "string"
     },
@@ -67,7 +66,7 @@
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "$everyone",
-      "permission": "DENY"
+      "permission": "ALLOW"
     },
     {
       "accessType": "*",
@@ -115,6 +114,13 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "loginAccount"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "signUpAccount"
     }
   ],
   "methods": {}
