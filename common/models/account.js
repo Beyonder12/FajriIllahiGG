@@ -6,11 +6,12 @@ const async = require("async");
 // const admin = require('firebase-admin');
 const ejs = require("ejs");
 const fs = require('fs');
+const moment = require('moment-timezone');
 
 
 module.exports = function (Account) {
 
-  Account.signUpAccount = async function (data, options) {
+  Account.signUpAccount = async function (data) {
     //payload: {username: "string", password: "string"}
 
     try {
