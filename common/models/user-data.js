@@ -1,4 +1,11 @@
-'use strict';
+const validate = require("validate.js");
+const path = require('path');
+const async = require("async");
+// const crypto = require("crypto-js");
+// const admin = require('firebase-admin');
+const ejs = require("ejs");
+const fs = require('fs');
+const moment = require('moment-timezone');
 
 module.exports = function(UserData) {
 
