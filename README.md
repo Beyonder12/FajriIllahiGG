@@ -13,5 +13,6 @@ Here tips to run your code in local machine.
 3. then "npm install -g strongloop"
 4. npm install
 5. npm install "validate.js"
-6. npm install "redis"
+6. npm install "moment"
+7. npm install "redis"
 
