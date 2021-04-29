@@ -10,32 +10,14 @@
     "password"
   ],
   "properties": {
-    "code": {
-      "type": "string"
-    },
+
     "password": {
       "type": "string"
     },
     "email": {
       "type": "string"
     },
-    "isPartner": {
-      "type": "boolean"
-    },
-    "createdId": {
-      "type": "string"
-    },
-    "createName": {
-      "type": "string"
-    },
-    "isEmailVerified": {
-      "type": "boolean"
-    },
     "username": {
-      "type": "string",
-      "required": false
-    },
-    "hp": {
       "type": "string",
       "required": false
     },
@@ -46,9 +28,6 @@
     "gender": {
       "type": "number",
       "required": false
-    },
-    "isNeedChangePassword": {
-      "type": "boolean"
     },
     "lastLoginDate": {
       "type": "date"
