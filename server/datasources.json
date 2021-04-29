@@ -7,7 +7,7 @@
     "host": "localhost",
     "port": 27017,
     "url": "",
-    "database": "mongodb",
+    "database": "fajri-illahi",
     "password": "",
     "name": "fajrii",
     "user": "",
