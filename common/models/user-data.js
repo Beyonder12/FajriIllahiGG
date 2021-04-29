@@ -60,6 +60,144 @@ UserData.remoteMethod(
     }
 );
 
+UserData.getList = async function (filter, skip, limit, sort, options) {
+    // payload : {placeId:"string", search:"string", dateStart: "date", dateEnd: "date"}
+
+    try {
+        const {Account} = UserData.app.models;
+        const token = options && options.accessToken;
+        if (!token) {
+            const error = new Error("Please login before access the Jenius Application!");
+            error.statusCode = 401;
+            throw error;
+        }
+     
+        const userId = token && token.userId;
+        if (!userId) {
+            const error = new Error("You have no access to this Jenius Application");
+            error.statusCode = 401;
+            throw error;
+        }
+
+      var constraints = {
+        placeId: {presence: true}
+      };
+
+      var validation = validate(filter, constraints);
+      if (validation) return Promise.reject({status:"error",data:validation});
+
+      var $$QUERY = {}, $$SEARCH_QUERY = {};
+      $$QUERY['isActive'] = true;
+
+      $$SEARCH_QUERY['$or'] = [
+        {supplierName: {$regex: filter['search'], $options: "i"}},
+        {code: {$regex: filter['search'], $options: "i"}},
+        {item: {$regex: filter['search'], $options: "i"}}
+      ];
+
+      if (filter.hasOwnProperty('dateStart')) {
+        if (filter.hasOwnProperty('dateEnd')) {
+
+          var dateString = filter['dateEnd'];
+          var startDate = new Date(dateString);
+          // seconds * minutes * hours * milliseconds = 1 day
+          var day = 60 * 60 * 24 * 1000;
+
+          $$QUERY['createdDate'] = {$gte: new Date(filter['dateStart']), $lte: new Date(startDate.getTime() + day)};
+        } else {
+          $$QUERY['createdDate'] = {$gte: new Date(filter['dateStart'])};
+        }
+      } else {
+        if (filter.hasOwnProperty('dateEnd')) {
+          $$QUERY['createdDate'] = {$lte: new Date(filter['dateEnd'])};
+        }
+      }
+
+      var $$ITEMS = 1;
+      if (limit != null) {
+        if (skip != null) {
+          $$ITEMS = {$slice: ["$items", skip, limit]};
+        } else {
+          $$ITEMS = {$slice: ["$items", limit]};
+        }
+      }
+
+      var $$LOOKUP_SUPPLIER = {$lookup: {
+        from: "Supplier",
+        localField: "supplierId",
+        foreignField: "_id",
+        as: "Suppliers"
+      }};
+      var $$UNWIND_SUPPLIER = {$unwind: {path: '$Suppliers', preserveNullAndEmptyArrays: true}};
+      var $$LOOKUP_ITEMS = { $lookup: {
+        from: "TxPurchaseItem",
+        localField: "_id",
+        foreignField: "poId",
+        as: "TxPurchaseItems"
+      }};
+
+      const { connector, ObjectID } = TxPurchase.getDataSource();
+      const $$placeId = ObjectID(filter['placeId']);
+      $$QUERY['placeId'] = $$placeId;
+
+      var $$AGGREGATE = [];
+      $$AGGREGATE.push({$match: $$QUERY});
+      $$AGGREGATE.push($$LOOKUP_SUPPLIER);
+      $$AGGREGATE.push($$UNWIND_SUPPLIER);
+      $$AGGREGATE.push($$LOOKUP_ITEMS);
+      $$AGGREGATE.push({
+        $project: {
+          code: 1,
+          supplierName: "$Suppliers.name",
+          item: '$TxPurchaseItems.name',
+          countItem: { $size: "$TxPurchaseItems" },
+          totalFee: 1,
+          createdName: 1,
+          createdDate: 1,
+        }
+      });
+      if (filter.hasOwnProperty('search')) $$AGGREGATE.push({$match: $$SEARCH_QUERY});
+      $$AGGREGATE.push({$sort: {createdDate: -1}});
+      $$AGGREGATE.push({$group: { _id: null, count: { $sum:1 }, items: { $push: '$$ROOT' }}});
+      $$AGGREGATE.push({$project: {
+        _id: 0,
+        status: "success",
+        count: 1,
+        items: $$ITEMS
+      }});
+
+      // Raw query
+      const itemCollection = connector.collection('TxPurchase');
+      const itemCursor = await itemCollection.aggregate($$AGGREGATE);
+      var results = await itemCursor.toArray();
+
+      if (results.length == 0) {
+        results = {status: "success", items: [], count:0 };
+      } else {
+        results = results[0];
+      }
+
+      return Promise.resolve(results);
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  };
+
+UserData.remoteMethod("getList", {
+description: ["get list of inventory"],
+accepts: [
+    { arg: "filter", type: "object", required: true, description: "filter" },
+    { arg: "skip", type: "number", required: false, description: "skip" },
+    { arg: "limit", type: "number", required: false, description: "limit" },
+    { arg: "sort", type: "string", required: false, description: "sort" },
+    { arg: "options", type: "object", http: "optionsFromRequest"},
+],
+returns: {
+    arg: "status", type: "object", root: true, description: "Return value"
+},
+http: {verb: "get", path: "/getList"}
+});
+
 // CRUD Operation : Update Method
 UserData.updateJenius = async function (id, options) {
     // payload: {id: "string"}
