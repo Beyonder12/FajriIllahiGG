@@ -50,7 +50,7 @@ UserData.remoteMethod(
     "createJenius", {
     description: ["add account"],
     accepts: [
-        {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "Data Pasien"},
+        {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "Data User"},
         {arg: "options", type: "object", http: "optionsFromRequest"}
     ],
     returns: {
@@ -60,6 +60,7 @@ UserData.remoteMethod(
     }
 );
 
+// CRUD Operation : Read Method
 UserData.readJenius = async function (filter, skip, limit, sort, options) {
     // payload : {placeId:"string", search:"string", dateStart: "date", dateEnd: "date"}
 
@@ -80,38 +81,27 @@ UserData.readJenius = async function (filter, skip, limit, sort, options) {
         }
 
       var constraints = {
-        placeId: {presence: true}
+        accountNumber: {presence: true},
+        identityNumber: {presence:true},
       };
 
       var validation = validate(filter, constraints);
-      if (validation) return Promise.reject({status:"error",data:validation});
+      if (validation) {
+          const error = new Error('Error Validation!');
+          error.statusCode = 412;
+          error.message = validation;
+          throw error;
+      }
+      
 
       var $$QUERY = {}, $$SEARCH_QUERY = {};
-      $$QUERY['isActive'] = true;
+     
 
       $$SEARCH_QUERY['$or'] = [
-        {supplierName: {$regex: filter['search'], $options: "i"}},
-        {code: {$regex: filter['search'], $options: "i"}},
-        {item: {$regex: filter['search'], $options: "i"}}
+        {userName: {$regex: filter['search'], $options: "i"}},
+        {emailAddress: {$regex: filter['search'], $options: "i"}},
+        
       ];
-
-      if (filter.hasOwnProperty('dateStart')) {
-        if (filter.hasOwnProperty('dateEnd')) {
-
-          var dateString = filter['dateEnd'];
-          var startDate = new Date(dateString);
-          // seconds * minutes * hours * milliseconds = 1 day
-          var day = 60 * 60 * 24 * 1000;
-
-          $$QUERY['createdDate'] = {$gte: new Date(filter['dateStart']), $lte: new Date(startDate.getTime() + day)};
-        } else {
-          $$QUERY['createdDate'] = {$gte: new Date(filter['dateStart'])};
-        }
-      } else {
-        if (filter.hasOwnProperty('dateEnd')) {
-          $$QUERY['createdDate'] = {$lte: new Date(filter['dateEnd'])};
-        }
-      }
 
       var $$ITEMS = 1;
       if (limit != null) {
@@ -120,42 +110,14 @@ UserData.readJenius = async function (filter, skip, limit, sort, options) {
         } else {
           $$ITEMS = {$slice: ["$items", limit]};
         }
-      }
+      };
 
-      var $$LOOKUP_SUPPLIER = {$lookup: {
-        from: "Supplier",
-        localField: "supplierId",
-        foreignField: "_id",
-        as: "Suppliers"
-      }};
-      var $$UNWIND_SUPPLIER = {$unwind: {path: '$Suppliers', preserveNullAndEmptyArrays: true}};
-      var $$LOOKUP_ITEMS = { $lookup: {
-        from: "TxPurchaseItem",
-        localField: "_id",
-        foreignField: "poId",
-        as: "TxPurchaseItems"
-      }};
-
-      const { connector, ObjectID } = TxPurchase.getDataSource();
-      const $$placeId = ObjectID(filter['placeId']);
-      $$QUERY['placeId'] = $$placeId;
+      const { connector, ObjectID } = UserData.getDataSource();
+    //   const $$_id = ObjectID(filter['_id']);
+    //   $$QUERY['_id'] = $$_id;
 
       var $$AGGREGATE = [];
       $$AGGREGATE.push({$match: $$QUERY});
-      $$AGGREGATE.push($$LOOKUP_SUPPLIER);
-      $$AGGREGATE.push($$UNWIND_SUPPLIER);
-      $$AGGREGATE.push($$LOOKUP_ITEMS);
-      $$AGGREGATE.push({
-        $project: {
-          code: 1,
-          supplierName: "$Suppliers.name",
-          item: '$TxPurchaseItems.name',
-          countItem: { $size: "$TxPurchaseItems" },
-          totalFee: 1,
-          createdName: 1,
-          createdDate: 1,
-        }
-      });
       if (filter.hasOwnProperty('search')) $$AGGREGATE.push({$match: $$SEARCH_QUERY});
       $$AGGREGATE.push({$sort: {createdDate: -1}});
       $$AGGREGATE.push({$group: { _id: null, count: { $sum:1 }, items: { $push: '$$ROOT' }}});
@@ -167,7 +129,7 @@ UserData.readJenius = async function (filter, skip, limit, sort, options) {
       }});
 
       // Raw query
-      const itemCollection = connector.collection('TxPurchase');
+      const itemCollection = connector.collection('UserData');
       const itemCursor = await itemCollection.aggregate($$AGGREGATE);
       var results = await itemCursor.toArray();
 
@@ -186,7 +148,7 @@ UserData.readJenius = async function (filter, skip, limit, sort, options) {
 UserData.remoteMethod("readJenius", {
 description: ["get list of inventory"],
 accepts: [
-    { arg: "filter", type: "object", required: true, description: "filter" },
+    { arg: "filter", type: "object", required: true, description: "filter: exampe {\"accountNumber\":\"\", \"identityNumber\":\"\", \"search\":\"\"} " },
     { arg: "skip", type: "number", required: false, description: "skip" },
     { arg: "limit", type: "number", required: false, description: "limit" },
     { arg: "sort", type: "string", required: false, description: "sort" },
@@ -199,30 +161,50 @@ http: {verb: "get"}
 });
 
 // CRUD Operation : Update Method
-UserData.updateJenius = async function (id, options) {
+UserData.updateJenius = async function (id, data, options) {
     // payload: {id: "string"}
 
     try {
-        const Account = Rack.app.models.Account;
+        const {Account} = UserData.app.models;
         const token = options && options.accessToken;
-        if (!token) return Promise.reject({status:"error",data:"Please login to access this feature"});
+        if (!token) {
+            const error = new Error("Please login before access the Jenius Application!");
+            error.statusCode = 401;
+            throw error;
+        }
+    
         const userId = token && token.userId;
-        if (!userId) return Promise.reject({status:"error",data:"You have no access to this feature"});
-        if (!id) return Promise.reject({status:"error",data:"Id cannot empty"});
+        if (!userId) {
+            const error = new Error("You have no access to this Jenius Application");
+            error.statusCode = 401;
+            throw error;
+        }
+        if (!id) {
+            const error = new Error("Id cannot empty");
+            error.statusCode = 412;
+            throw error;
+        }
         var account = await Account.findById(userId);
-        if (!account) return Promise.reject({status:"error",data:"Your account has problem, call Assist.id team"});
+        if (!account) {
+            const error = new Error("Id cannot empty");
+            error.statusCode = 404;
+            throw error;
+        }
 
         const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
         var data = {};
-        data['deletedId'] = userId;
-        data['deletedDate'] = new Date(todayMomentJkt);
-        data['deletedName'] = account['name'];
-        data['isActive'] = false;
-        var rack = await Rack.updateAll({id: id}, data);
-        if (rack['count'] > 0) {
-        return Promise.resolve({status: "success", item: rack});
+        data['updatedId'] = userId;
+        data['updatedDate'] = new Date(todayMomentJkt);
+        data['updatedName'] = account['name'] || account['email'];
+        // await UserData.save(data)
+        
+        var userData = await UserData.updateAll({id: id}, data);
+        if (userData['count'] > 0) {
+        return Promise.resolve({status: "success", item: userData});
         } else {
-        return Promise.reject({status: "error", data: "Please make sure your id is right"});
+        const error = new Error ("Please make sure your id is right");
+        error.statusCode = 404;
+        throw error;
         }
     } catch (err) {
         return Promise.reject(err);
@@ -234,7 +216,7 @@ UserData.remoteMethod(
     description: ["Soft delete Rack by id by changing isDeleted property to true ( Settings -> Rack)"],
     accepts: [
         {arg: "id", type: "string", http: {source: 'path'}, required: true, description: "Id 5fa26188bd67d3df5407d018 "},
-
+        {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "User data for updating"},
         {arg: "options", type: "object", http: "optionsFromRequest"}
     ],
     returns: {
@@ -243,6 +225,103 @@ UserData.remoteMethod(
     http: {verb: "put", path: "/:id/updateJenius"}
     }
 );
+
+// CRUD Operation : Update Method
+UserData.softDeleteJenius = async function (id, options) {
+    // payload: {id: "string"}
+
+    try {
+      const Account = Customer.app.models.Account;
+      const token = options && options.accessToken;
+      if (!token) return Promise.reject({status:"error",data:"Please login to access this feature"});
+      const userId = token && token.userId;
+      if (!userId) return Promise.reject({status:"error",data:"You have no access to this feature"});
+      if (!id) return Promise.reject({status:"error",data:"Id cannot empty"});
+      var account = await Account.findById(userId);
+      if (!account) return Promise.reject({status:"error",data:"Your account has problem, call Assist.id team"});
+
+      const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+      var data = {};
+      data['deletedId'] = userId;
+      data['deletedDate'] = new Date(todayMomentJkt);
+      data['deletedName'] = account['name'];
+      data['isActive'] = false;
+      var userData = await UserData.updateAll({id: id}, data);
+      if (customer['count'] > 0) {
+        return Promise.resolve({status: "success", item: customer});
+      } else {
+        const error = new Error("Please make sure your id is right");
+        error.statusCode = 404;
+        throw error;
+      }
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  }
+
+UserData.remoteMethod(
+    "softDeleteJenius", {
+    description: ["Soft delete Customer by id by changing isDeleted property to true ( Settings -> Customer)"],
+    accepts: [
+        {arg: "id", type: "string", http: {source: 'path'}, required: true, description: "Id 5fa26188bd67d3df5407d018 "},
+
+        {arg: "options", type: "object", http: "optionsFromRequest"}
+    ],
+    returns: {
+        arg: "status", type: "object", root: true, description: "Return value"
+    },
+    http: {verb: "put", path: "/:id/softDeleteJenius"}
+    }
+);
+
+  // CRUD Operation : Delete Method
+UserData.deleteJenius = async function (id, options) {
+    
+try {
+
+    const {Account} = UserData.app.models;
+    const token = options && options.accessToken;
+    if (!token) {
+        const error = new Error("Please login before access the Jenius Application!");
+        error.statusCode = 401;
+        throw error;
+    }
+    
+    const userId = token && token.userId;
+    if (!userId) {
+        const error = new Error("You have no access to this Jenius Application");
+        error.statusCode = 401;
+        throw error;
+    }
+    if (!id) {
+    const error = new Error("Id cannot empty");
+    error.statusCode = 412;
+    throw error;
+    }
+    
+
+    var userData = await UserData.destroyAll({id: id});
+    return Promise.resolve({status: "successfully deleted item permanently", item: userData});
+} catch (err) {
+    return Promise.reject(err);
+}
+};
+
+UserData.remoteMethod(
+    "deleteJenius", {
+    description: ["Delete Dictionary by provided id(Settings > Kategori Barang)"],
+    accepts: [
+        {arg: "id", type: "string", http: {source: 'path'}, required: true, description: "Id"},
+
+        {arg: "options", type: "object", http: "optionsFromRequest"}
+    ],
+    returns: {
+        arg: "status", type: "object", root: true, description: "Return status succeed"
+    },
+    http: {verb: "delete", path: "/:id/deleteJenius"}
+    }
+);
+
 
   UserData.disableRemoteMethod("create", true);
   UserData.disableRemoteMethod("upsert", true);
