@@ -2,32 +2,95 @@
 
 module.exports = function(UserData) {
 
-    UserData.createJenius = async function (data,options) {
-        //payload: {username: "string", password: "string"}
-    
-        try {
-          
-    
-          UserData.create(data);
-          return Promise.resolve({status:"success", data:data});
-        } catch (err) {
-          return Promise.reject(err);
+UserData.createJenius = async function (data,options) {
+    //payload: {username: "string", password: "string"}
+
+    try {
+        const Account = UserData.app.models.Account;
+        const token = options && options.accessToken;
+        if (!token) {
+            const error = new Error("Please login before access the Jenius Application!");
+            error.statusCode = 401;
+            throw error;
         }
-      }
-    
-      UserData.remoteMethod(
-          "createJenius", {
-            description: ["add account"],
-            accepts: [
-              {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "Data Pasien"},
-              {arg: "options", type: "object", http: "optionsFromRequest"}
-            ],
-            returns: {
-              arg: "status", type: "object", root: true, description: "Return value"
-            },
-            http: {verb: "post"}
-          }
-      );
+     
+        const userId = token && token.userId;
+        if (!userId) {
+            const error = new Error("You have no access to this feature");
+        }
+      
+        if (!id) return Promise.reject({status:"error",data:"Id cannot empty"});
+        var account = await Account.findById(userId);
+        if (!account) return Promise.reject({status:"error",data:"Your account has problem, call Assist.id team"});
+
+        const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+        
+
+        UserData.create(data);
+        return Promise.resolve({status:"success", data:data});
+    } catch (err) {
+        return Promise.reject(err);
+    }
+}
+
+UserData.remoteMethod(
+    "createJenius", {
+    description: ["add account"],
+    accepts: [
+        {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "Data Pasien"},
+        {arg: "options", type: "object", http: "optionsFromRequest"}
+    ],
+    returns: {
+        arg: "status", type: "object", root: true, description: "Return value"
+    },
+    http: {verb: "post"}
+    }
+);
+
+UserData.updateJenius = async function (id, options) {
+    // payload: {id: "string"}
+
+    try {
+        const Account = Rack.app.models.Account;
+        const token = options && options.accessToken;
+        if (!token) return Promise.reject({status:"error",data:"Please login to access this feature"});
+        const userId = token && token.userId;
+        if (!userId) return Promise.reject({status:"error",data:"You have no access to this feature"});
+        if (!id) return Promise.reject({status:"error",data:"Id cannot empty"});
+        var account = await Account.findById(userId);
+        if (!account) return Promise.reject({status:"error",data:"Your account has problem, call Assist.id team"});
+
+        const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+        var data = {};
+        data['deletedId'] = userId;
+        data['deletedDate'] = new Date(todayMomentJkt);
+        data['deletedName'] = account['name'];
+        data['isActive'] = false;
+        var rack = await Rack.updateAll({id: id}, data);
+        if (rack['count'] > 0) {
+        return Promise.resolve({status: "success", item: rack});
+        } else {
+        return Promise.reject({status: "error", data: "Please make sure your id is right"});
+        }
+    } catch (err) {
+        return Promise.reject(err);
+    }
+    }
+
+UserData.remoteMethod(
+    "updateJenius", {
+    description: ["Soft delete Rack by id by changing isDeleted property to true ( Settings -> Rack)"],
+    accepts: [
+        {arg: "id", type: "string", http: {source: 'path'}, required: true, description: "Id 5fa26188bd67d3df5407d018 "},
+
+        {arg: "options", type: "object", http: "optionsFromRequest"}
+    ],
+    returns: {
+        arg: "status", type: "object", root: true, description: "Return value"
+    },
+    http: {verb: "put", path: "/:id/delete"}
+    }
+);
 
   UserData.disableRemoteMethod("create", true);
   UserData.disableRemoteMethod("upsert", true);
