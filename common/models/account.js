@@ -11,6 +11,7 @@ const moment = require('moment-timezone');
 
 module.exports = function (Account) {
 
+
   Account.signUpAccount = async function (data) {
     //payload: {username: "string", password: "string"}
 
@@ -134,8 +135,26 @@ module.exports = function (Account) {
   );
 
 
+  Account.disableRemoteMethod("create", true);
+  Account.disableRemoteMethod("upsert", true);
+  Account.disableRemoteMethod("updateAll", true);
+  Account.disableRemoteMethod("updateAttributes", false);
+  Account.disableRemoteMethod("find", true);
+  Account.disableRemoteMethod("findById", true);
+  Account.disableRemoteMethod("findOne", true);
+  Account.disableRemoteMethod("deleteById", true);
+  Account.disableRemoteMethod("confirm", true);
+  Account.disableRemoteMethod("count", true);
+  Account.disableRemoteMethod("exists", true);
+  Account.disableRemoteMethod("resetPassword", true);
+  Account.disableRemoteMethod('replaceOrCreate', true);
+  Account.disableRemoteMethod('replaceById', true);
+  Account.disableRemoteMethod('createChangeStream', true);
+  Account.disableRemoteMethod("upsertWithWhere", true);
+  Account.disableRemoteMethod("login", true);
+  Account.disableRemoteMethod("creator", true);
   Account.disableRemoteMethodByName("upsert", true);
-  // Account.disableRemoteMethodByName("updateAll", true);
+  Account.disableRemoteMethodByName("updateAll", true);
   Account.disableRemoteMethodByName("updateAttributes", false);
   Account.disableRemoteMethodByName("deleteById", true);
   Account.disableRemoteMethodByName("count", true);
