@@ -16,16 +16,21 @@ UserData.createJenius = async function (data,options) {
      
         const userId = token && token.userId;
         if (!userId) {
-            const error = new Error("You have no access to this feature");
+            const error = new Error("You have no access to this Jenius Application");
+            error.statusCode = 401;
+            throw error;
         }
-      
-        if (!id) return Promise.reject({status:"error",data:"Id cannot empty"});
+        
         var account = await Account.findById(userId);
-        if (!account) return Promise.reject({status:"error",data:"Your account has problem, call Assist.id team"});
+        if (!account) {
+            const error = new Error("Jenius can't find your account");
+            error.statusCode = 404;
+            throw error;
+        }
 
         const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
-        
-
+        data['cretedDate'] = new Date(todayMomentJkt);
+        data['createdName'] = account['name'] || account['username'];
         UserData.create(data);
         return Promise.resolve({status:"success", data:data});
     } catch (err) {
@@ -88,7 +93,7 @@ UserData.remoteMethod(
     returns: {
         arg: "status", type: "object", root: true, description: "Return value"
     },
-    http: {verb: "put", path: "/:id/delete"}
+    http: {verb: "put", path: "/:id/updateJenius"}
     }
 );
 
