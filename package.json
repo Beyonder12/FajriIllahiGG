@@ -21,7 +21,8 @@
     "loopback-datasource-juggler": "^2.39.0",
     "nodemon": "^2.0.7",
     "serve-favicon": "^2.0.1",
-    "strong-error-handler": "^2.0.0"
+    "strong-error-handler": "^2.0.0",
+    "validate.js": "^0.13.1"
   },
   "devDependencies": {
     "eslint": "^3.17.1",
