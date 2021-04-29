@@ -259,7 +259,7 @@ UserData.softDeleteJenius = async function (id, options) {
         }
 
       const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
-
+      var data = {};
       data['deletedId'] = userId;
       data['deletedDate'] = new Date(todayMomentJkt);
       data['deletedName'] = account['name'];
