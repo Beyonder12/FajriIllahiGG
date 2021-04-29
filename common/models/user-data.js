@@ -192,11 +192,12 @@ UserData.updateJenius = async function (id, data, options) {
         }
 
         const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
-        var data = {};
+      
         data['updatedId'] = userId;
         data['updatedDate'] = new Date(todayMomentJkt);
         data['updatedName'] = account['name'] || account['email'];
         // await UserData.save(data)
+        console.log(data)
         
         var userData = await UserData.updateAll({id: id}, data);
         if (userData['count'] > 0) {
@@ -231,23 +232,40 @@ UserData.softDeleteJenius = async function (id, options) {
     // payload: {id: "string"}
 
     try {
-      const Account = Customer.app.models.Account;
-      const token = options && options.accessToken;
-      if (!token) return Promise.reject({status:"error",data:"Please login to access this feature"});
-      const userId = token && token.userId;
-      if (!userId) return Promise.reject({status:"error",data:"You have no access to this feature"});
-      if (!id) return Promise.reject({status:"error",data:"Id cannot empty"});
-      var account = await Account.findById(userId);
-      if (!account) return Promise.reject({status:"error",data:"Your account has problem, call Assist.id team"});
+        const {Account} = UserData.app.models;
+        const token = options && options.accessToken;
+        if (!token) {
+            const error = new Error("Please login before access the Jenius Application!");
+            error.statusCode = 401;
+            throw error;
+        }
+    
+        const userId = token && token.userId;
+        if (!userId) {
+            const error = new Error("You have no access to this Jenius Application");
+            error.statusCode = 401;
+            throw error;
+        }
+        if (!id) {
+            const error = new Error("Id cannot empty");
+            error.statusCode = 412;
+            throw error;
+        }
+        var account = await Account.findById(userId);
+        if (!account) {
+            const error = new Error("Not found!");
+            error.statusCode = 404;
+            throw error;
+        }
 
       const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
-      var data = {};
+
       data['deletedId'] = userId;
       data['deletedDate'] = new Date(todayMomentJkt);
       data['deletedName'] = account['name'];
       data['isActive'] = false;
       var userData = await UserData.updateAll({id: id}, data);
-      if (customer['count'] > 0) {
+      if (userData['count'] > 0) {
         return Promise.resolve({status: "success", item: customer});
       } else {
         const error = new Error("Please make sure your id is right");
