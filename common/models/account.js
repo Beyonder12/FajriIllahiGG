@@ -12,7 +12,7 @@ const moment = require('moment-timezone');
 module.exports = function (Account) {
 
 
-  Account.signUpAccount = async function (data) {
+  Account.signUpAccountJenius = async function (data) {
     //payload: {username: "string", password: "string"}
 
     try {
@@ -37,7 +37,7 @@ module.exports = function (Account) {
   }
 
   Account.remoteMethod(
-      "signUpAccount", {
+      "signUpAccountJenius", {
         description: ["add account"],
         accepts: [
           {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "Data Pasien"},
@@ -50,7 +50,7 @@ module.exports = function (Account) {
       }
   );
 
-  Account.loginAccount = async function (data, options) {
+  Account.loginAccountJenius = async function (data, options) {
     //payload: {username: "string", password: "string"}
 
     const AccessToken = Account.app.models.AccessToken;
@@ -68,6 +68,10 @@ module.exports = function (Account) {
         error.statusCode = 412;
         throw error;
       };
+
+      const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+      data['cretedDate'] = new Date(todayMomentJkt);
+     
     
 
       // TODO: when access relations and provider made, input it here
@@ -121,7 +125,7 @@ module.exports = function (Account) {
   }
 
   Account.remoteMethod(
-      "loginAccount", {
+      "loginAccountJenius", {
         description: ["add account"],
         accepts: [
           {arg: "data", type: "object", http: {source: 'body'}, required: true, description: "Data Pasien"},
