@@ -39,6 +39,7 @@ UserData.createJenius = async function (data,options) {
         const todayMomentJkt = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
         data['cretedDate'] = new Date(todayMomentJkt);
         data['createdName'] = account['name'] || account['username'];
+        data['isActive'] = true;
         UserData.create(data);
         return Promise.resolve({status:"success", data:data});
     } catch (err) {
@@ -95,7 +96,7 @@ UserData.readJenius = async function (filter, skip, limit, sort, options) {
       
 
       var $$QUERY = {}, $$SEARCH_QUERY = {};
-     
+      $$QUERY['isActive'] = true
 
       $$SEARCH_QUERY['$or'] = [
         {userName: {$regex: filter['search'], $options: "i"}},
