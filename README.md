@@ -1,4 +1,4 @@
-# FajriIllahiJenius
+# FajriIllahiJ
 Simple CRUD Project, 
 1. Protect the API with the authorization header => Using error handling to authorize the user
 2. Validate the header request (authorization header) => Using validate.js library
